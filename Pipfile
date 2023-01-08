@@ -9,6 +9,7 @@ djangorestframework = "*"
 djangorestframework-csv = "*"
 djangorestframework-yaml = "*"
 bleach = "*"
+djoser = "*"
 
 [dev-packages]
 

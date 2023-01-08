@@ -1,23 +1,38 @@
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from rest_framework.renderers import TemplateHTMLRenderer, StaticHTMLRenderer
-from rest_framework.decorators import api_view, renderer_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    renderer_classes,
+    permission_classes,
+    throttle_classes,
+)
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator, EmptyPage
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 # from rest_framework_csv.renderers import CSVRenderer
 # from rest_framework_yaml.renderers import YAMLRenderer
 from .models import MenuItem, Category
 from .serializers import MenuItemSerializer, CategorySerializer
+from .throttles import TenCallsPerMinute
 
 # from .serializers import MenuItemSerializer
 
 
-# class MenuItemsView(generics.ListCreateAPIView):
-#     queryset = MenuItem.objects.all()
-#     serializer_class = MenuItemSerializer
+class MenuItemsView(viewsets.ModelViewSet):
+    # throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    queryset = MenuItem.objects.all()
+    serializer_class = MenuItemSerializer
+
+    def get_throttles(self):
+        if self.action == "create":
+            throttle_classes = [UserRateThrottle]
+        else:
+            throttle_classes = []
+        return [throttle() for throttle in throttle_classes]
 
 
 class SingleMenuItemView(generics.RetrieveUpdateAPIView, generics.DestroyAPIView):
@@ -110,3 +125,17 @@ def welcome(request):
 @permission_classes([IsAuthenticated])
 def secret(request):
     return Response({"message": "some secret message"})
+
+
+@api_view()
+@throttle_classes([AnonRateThrottle])
+def throttle_check(request):
+    return Response({"message": "Successfull"})
+
+
+@api_view()
+@permission_classes([IsAuthenticated])
+# @throttle_classes([UserRateThrottle])
+@throttle_classes([TenCallsPerMinute])  # custom throttling
+def throttle_check_auth(request):
+    return Response({"message": "message for logged in user only"})
