@@ -7,11 +7,13 @@ from rest_framework.decorators import (
     throttle_classes,
 )
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_201_CREATED, HTTP_200_OK, HTTP_400_BAD_REQUEST
 from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator, EmptyPage
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+from django.contrib.auth.models import User, Group
+from django.contrib.auth import get_user_model
 
 # from rest_framework_csv.renderers import CSVRenderer
 # from rest_framework_yaml.renderers import YAMLRenderer
@@ -139,3 +141,35 @@ def throttle_check(request):
 @throttle_classes([TenCallsPerMinute])  # custom throttling
 def throttle_check_auth(request):
     return Response({"message": "message for logged in user only"})
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def managers(request):
+    username = request.data["username"]
+    if username:
+        user = get_object_or_404(User, username=username)
+        managers = Group.objects.get(name="Manager")
+        if request.method == "POST":
+            managers.user_set.add(user)
+        elif request.method == "DELETE":
+            managers.user_set.remove(user)
+        return Response({"message": "ok"})
+    return Response({"message": "error"}, HTTP_400_BAD_REQUEST)
+
+
+""" Improperly configured;
+We must not keep this endpoint in production,
+Any user can change one's password """
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def reset_password(request):
+    # validate
+    username = request.data["username"]
+    new_password = request.data["new_password"]
+    user = get_object_or_404(User, username=username)
+    user.set_password(new_password)
+    user.save()
+    return Response({"message": "Password has been changed successfully"}, HTTP_200_OK)

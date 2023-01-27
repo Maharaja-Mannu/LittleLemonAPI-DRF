@@ -14,3 +14,11 @@ class MenuItem(models.Model):
     price = models.DecimalField(max_digits=6, decimal_places=2)
     inventory = models.SmallIntegerField()
     category = models.ForeignKey(Category, on_delete=models.PROTECT)
+
+
+class Person(models.Model):
+    first_name = models.TextField()
+    last_name = models.TextField()
+
+    def __str__(self):
+        return f"{self.first_name}, {self.last_name}"

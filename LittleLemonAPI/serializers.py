@@ -3,6 +3,7 @@ from rest_framework.validators import UniqueValidator
 from decimal import Decimal
 import bleach
 from .models import MenuItem, Category
+from django.contrib.auth.models import User
 
 
 class CategorySerializer(serializers.ModelSerializer):
